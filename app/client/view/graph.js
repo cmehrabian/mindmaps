@@ -1,6 +1,8 @@
 var newLink;
 var circleRadius = 50;
 
+var links = []
+
 Template.graph.rendered = function(){
 
   Session.set('target_id', Router.current().params._id)
@@ -16,21 +18,12 @@ Template.graph.rendered = function(){
   self.texts = self.graphElem.select("#texts");
 
   var nodes = []
-  var links = []
 
   var meteorNodes = [];
   var meteorEdges = [];
 
   var targetType;
   var target;
-
-  var force = d3.layout.force()
-    .linkDistance(200)
-    .linkStrength(.5)
-    .charge(-160)
-    .gravity(.04)
-    .size([1200, 500])
-    .on("tick", tick)
 
   // Will change when target changes, loads all connected nodes.
   // needed for separate link code, might need phasing out
@@ -48,7 +41,6 @@ Template.graph.rendered = function(){
   // Calculating node changes
   Deps.autorun(function(){
     meteorNodes = Nodes.find({root_id:target.root_id}).fetch();
-
     if(nodes.length == 0)
       var isFresh = true;
 
@@ -57,56 +49,58 @@ Template.graph.rendered = function(){
       nodes.push(n);
     });
 
+    addNode(newNodes, nodes, self);
+
 
     // LOOKINTO, does the selection change dynamically when elements are added?
-    var DOMnodes = self.nodes.selectAll("*")
-      .data(nodes, function(d){ return d._id});
-
-    // 'node' + d._id is because the id field isn't allowed to begin with numbers.
-    if(isFresh){
-      DOMnodes.enter()
-        .append("circle")
-          .attr("class",function(d) { return "node"})
-          .attr("_id", function(d) { return "node" + d._id; })
-          .on("mouseover", mouseover)
-          .on("dblclick", doubleclick)
-        .call(force.drag());
-
-        selectHighlighted();
-    }
-    else{
-      DOMnodes.enter()
-        .append("circle")
-        .attr("class", "node unread statement") // here's the difference, also the statement part is a bit ratchet.
-        .attr("_id", function(d) { return "node" + d._id; })
-        .on("mouseover", mouseover)
-        .on("dblclick", doubleclick)
-        .call(force.drag());
-    }
-    console.log(nodes);
-    console.log("started");
-    console.log(self.texts.selectAll("*"))
-    self.texts.selectAll("*").remove();
-    console.log(self.texts.selectAll("*"))
-    var untitled = _.filter(nodes, function(node){return !!node.title;});
-    self.texts.selectAll("*")
-      .data(nodes, function(d) {return d._id})
-        .enter()
-          .append("text")
-            .text(function(d){ return d.title; })
-            .attr("text-anchor", "middle")
-            .attr("font-size", "12")
-            .classed("unselectable", true);
-
-    console.log(self.texts.selectAll("*"))
-
-    // FIXME- This won't work as expected, get it to run like data selection.
-    DOMnodes.exit()
-      .remove()
-
-    force
-      .nodes(nodes)
-      .start()
+    // var DOMnodes = self.nodes.selectAll("*")
+    //   .data(nodes, function(d){ return d._id});
+    //
+    // // 'node' + d._id is because the id field isn't allowed to begin with numbers.
+    // if(isFresh){
+    //   DOMnodes.enter()
+    //     .append("circle")
+    //       .attr("class",function(d) { return "node"})
+    //       .attr("_id", function(d) { return "node" + d._id; })
+    //       .on("mouseover", mouseover)
+    //       .on("dblclick", doubleclick)
+    //     .call(force.drag());
+    //
+    //     selectHighlighted();
+    // }
+    // else{
+    //   DOMnodes.enter()
+    //     .append("circle")
+    //     .attr("class", "node unread statement") // here's the difference, also the statement part is a bit ratchet.
+    //     .attr("_id", function(d) { return "node" + d._id; })
+    //     .on("mouseover", mouseover)
+    //     .on("dblclick", doubleclick)
+    //     .call(force.drag());
+    // }
+    // // console.log(nodes);
+    // console.log("started");
+    // // console.log(self.texts.selectAll("*"))
+    // self.texts.selectAll("*").remove();
+    // // console.log(self.texts.selectAll("*"))
+    // var untitled = _.filter(nodes, function(node){return !!node.title;});
+    // self.texts.selectAll("*")
+    //   .data(nodes, function(d) {return d._id})
+    //     .enter()
+    //       .append("text")
+    //         .text(function(d){ return d.title; })
+    //         .attr("text-anchor", "middle")
+    //         .attr("font-size", "12")
+    //         .classed("unselectable", true);
+    //
+    // console.log(self.texts.selectAll("*"))
+    //
+    // // FIXME- This won't work as expected, get it to run like data selection.
+    // DOMnodes.exit()
+    //   .remove()
+    //
+    // force
+    //   .nodes(nodes)
+    //   .start()
   });
 
   // Calculates link changes.
@@ -115,31 +109,35 @@ Template.graph.rendered = function(){
     //FIXME: This fetches all links?
     var meteorLinks = Links.find().fetch();
     var newLinks = _.difference(meteorLinks, links);
-    newLinks.forEach(function(e){
-      var sourceNode = nodes.filter(function(n) { return n._id === e.source; })[0],
-          targetNode = nodes.filter(function(n) { return n._id === e.target; })[0];
-
-      // Add the edge to the array
-      if(sourceNode && targetNode)
-        links.push({source: sourceNode, target: targetNode, type:e.type, _id:e._id});
-    });
-
-    var DOMLinks = self.edges.selectAll("*")
-      .data(links)
-
-    DOMLinks.enter()
-      .append("path")
-      .attr("class", function(e) { return "edge " + e.type + "-edge"})
-      .attr("_id", function(e) { return "edge" + e._id })
-      .attr("marker-end", "url(#Triangle)")
-      .on("mouseover", mouseover);
-
-    DOMLinks.exit()
-      .remove();
-
-    force
-      .links(links)
-      .start()
+    addLink(newLinks, nodes, links, self);
+    // newLinks.forEach(function(e){
+    //   var sourceNode = nodes.filter(function(n) { return n._id === e.source; })[0],
+    //       targetNode = nodes.filter(function(n) { return n._id === e.target; })[0];
+    //
+    //   // Add the edge to the array
+    //   if(sourceNode && targetNode){
+    //     links.push({source: sourceNode, target: targetNode, type:e.type, _id:e._id});
+    //     console.log(sourceNode);
+    //     console.log(targetNode);
+    //   }
+    // });
+    //
+    // var DOMLinks = self.edges.selectAll("*")
+    //   .data(links)
+    //
+    // DOMLinks.enter()
+    //   .append("path")
+    //   .attr("class", function(e) { return "edge " + e.type + "-edge"})
+    //   .attr("_id", function(e) { return "edge" + e._id })
+    //   .attr("marker-end", "url(#Triangle)")
+    //   .on("mouseover", mouseover);
+    //
+    // DOMLinks.exit()
+    //   .remove();
+    //
+    // force
+    //   .links(links)
+    //   .start()
   })
 
   // handles logic for state changes
@@ -186,86 +184,10 @@ Template.graph.rendered = function(){
     checkNotification();
   })
 
-  function getOffsetCoordinates(source, target){
-      var s2 = target;
-      var s1 = source;
-
-      var slope = (s2.y - s1.y) / (s2.x - s1.x);
-      var radius = circleRadius;
-
-      var tanx = radius / Math.sqrt(Math.pow(slope,2) + 1);
-      var arrowLength = 10;
-      var arrowWidth = 2;
-
-      if(s2.x > s1.x)
-        tanx = -tanx;
-
-      var tany = slope * tanx;
-
-      tanx += s2.x;
-      tany += s2.y;
-
-      return {x: tanx, y: tany};
-  }
-
-  function tick() {
-    var node = self.graphElem.selectAll('.node');
-    var link = self.graphElem.selectAll('.edge');
-    var potentialLink = self.graphElem.select('#potential-edge');
-
-    link.attr("d", function(d) {
-      var offsets = getOffsetCoordinates(d.source, d.target);
-
-      return "M " + d.source.x + " " + d.source.y + " L " + offsets.x + " " +
-      offsets.y;
-    })
-
-    node.attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; });
-
-    node.each(collide(0.5, {nodes:nodes, links:links}));
-
-    d3.select("#texts").selectAll("*")
-      .attr("x", function(d){ return d.x; })
-      .attr("y", function(d){ return d.y; });
-  }
-
-  function mouseover(d) {
-    if (d3.event.defaultPrevented)
-      return;
-
-    var mousedOver = Session.get('mousedOver');
-    if(mousedOver){
-      var c = self.graphElem.select("circle[_id=node" + mousedOver._id + "]")
-      var p = self.graphElem.select("path[_id=edge"+ mousedOver._id + "]")
 
 
-      if(c[0][0])
-        c.classed('highlighted', false);
 
-      if(p[0][0])
-        p.classed('highlighted', false);
-    }
 
-    var c = self.graphElem.select("circle[_id=node" + d._id + "]")
-    var p = self.graphElem.select("path[_id=edge"+ d._id + "]")
-
-    if(c[0][0])
-      c.classed('highlighted', true);
-
-    if(p[0][0])
-      p.classed('highlighted', true);
-
-    Session.set('mousedOver', d);
-  }
-
-  function doubleclick(d){
-    if (d3.event.defaultPrevented)
-      return;
-
-    source = d;
-    Session.set("state", new State("chooseTarget", {source:d} ));
-  }
 
   function createEdge(){
     var source = Session.get("state").data.source
@@ -334,6 +256,9 @@ function State(name, data){
   this.data = data;
 }
 
+
+
+
 //http://www.coppelia.io/2014/07/an-a-to-z-of-extra-features-for-the-d3-force-layout/
 function collide(alpha, graph) {
   var padding = 1, // separation between circles
@@ -362,4 +287,195 @@ function collide(alpha, graph) {
       return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
     });
   };
+}
+
+
+
+var addLink = function(newLinks, nodes, links, self){
+  newLinks.forEach(function(e){
+    var sourceNode = nodes.filter(function(n){ return n._id === e.source; })[0];
+    var targetNode = nodes.filter(function(n){ return n._id == e.target; })[0];
+    //if not main parent node
+    if(sourceNode && targetNode){
+      links.push({
+        source: sourceNode,
+        target: targetNode,
+        type: e.type,
+        _id:e._id
+      });
+    }
+  });
+
+  var DOMLinks = self.edges.selectAll("*")
+    .data(links)
+
+  DOMLinks.enter()
+    .append("path")
+    .attr("class", function(e) { return "edge " + e.type + "-edge"})
+    .attr("_id", function(e) { return "edge" + e._id})
+    .attr("marker-end", "url(#Triangle)")
+    .on("mouseover", mouseover);
+  DOMLinks.exit()
+    .remove();
+  force
+    .links(links)
+    .start()
+}
+var addNode = function(newNodes, nodes, self){
+  var self = this;
+
+  // Look into re-writing this
+  self.graphElem = d3.select('#graph');
+  self.edges = self.graphElem.select('#edges');
+  self.nodes = self.graphElem.select('#nodes');
+  self.texts = self.graphElem.select("#texts");
+
+  if(nodes.length == 0)
+    var isFresh = true;
+
+  newNodes.forEach(function(n){
+    nodes.push(n);
+  });
+
+  // LOOKINTO, does the selection change dynamically when elements are added?
+  var DOMnodes = self.nodes.selectAll("*")
+    .data(nodes, function(d){ return d._id});
+
+  // 'node' + d._id is because the id field isn't allowed to begin with numbers.
+  if(isFresh){
+    DOMnodes.enter()
+      .append("circle")
+        .attr("class",function(d) { return "node"})
+        .attr("_id", function(d) { return "node" + d._id; })
+        .on("mouseover", mouseover)
+        .on("dblclick", doubleclick)
+      .call(force.drag());
+
+      selectHighlighted();
+  }
+  else{
+    DOMnodes.enter()
+      .append("circle")
+      .attr("class", "node unread statement") // here's the difference, also the statement part is a bit ratchet.
+      .attr("_id", function(d) { return "node" + d._id; })
+      .on("mouseover", mouseover)
+      .on("dblclick", doubleclick)
+      .call(force.drag());
+  }
+  // console.log(nodes);
+  console.log("started");
+  // console.log(self.texts.selectAll("*"))
+  self.texts.selectAll("*").remove();
+  // console.log(self.texts.selectAll("*"))
+  var untitled = _.filter(nodes, function(node){return !!node.title;});
+  self.texts.selectAll("*")
+    .data(nodes, function(d) {return d._id})
+      .enter()
+        .append("text")
+          .text(function(d){ return d.title; })
+          .attr("text-anchor", "middle")
+          .attr("font-size", "12")
+          .classed("unselectable", true);
+
+  console.log(self.texts.selectAll("*"))
+
+  // FIXME- This won't work as expected, get it to run like data selection.
+  DOMnodes.exit()
+    .remove()
+
+  force
+    .nodes(nodes)
+    .start()
+}
+
+// == d3 Methods ==
+
+var force = d3.layout.force()
+  .linkDistance(200)
+  .linkStrength(.5)
+  .charge(-160)
+  .gravity(.04)
+  .size([1200, 500])
+  .on("tick", tick)
+
+
+function mouseover(d) {
+  if (d3.event.defaultPrevented)
+    return;
+
+  var mousedOver = Session.get('mousedOver');
+  if(mousedOver){
+    var c = self.graphElem.select("circle[_id=node" + mousedOver._id + "]")
+    var p = self.graphElem.select("path[_id=edge"+ mousedOver._id + "]")
+
+
+    if(c[0][0])
+      c.classed('highlighted', false);
+
+    if(p[0][0])
+      p.classed('highlighted', false);
+  }
+
+  var c = self.graphElem.select("circle[_id=node" + d._id + "]")
+  var p = self.graphElem.select("path[_id=edge"+ d._id + "]")
+
+  if(c[0][0])
+    c.classed('highlighted', true);
+
+  if(p[0][0])
+    p.classed('highlighted', true);
+
+  Session.set('mousedOver', d);
+}
+
+function doubleclick(d){
+  if (d3.event.defaultPrevented)
+    return;
+
+  source = d;
+  Session.set("state", new State("chooseTarget", {source:d} ));
+}
+
+function tick() {
+  var node = self.graphElem.selectAll('.node');
+  var link = self.graphElem.selectAll('.edge');
+  var potentialLink = self.graphElem.select('#potential-edge');
+
+  link.attr("d", function(d) {
+    var offsets = getOffsetCoordinates(d.source, d.target);
+
+    return "M " + d.source.x + " " + d.source.y + " L " + offsets.x + " " +
+    offsets.y;
+  })
+
+  node.attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; });
+
+  node.each(collide(0.5, {nodes:nodes, links:links}));
+
+  d3.select("#texts").selectAll("*")
+    .attr("x", function(d){ return d.x; })
+    .attr("y", function(d){ return d.y; });
+}
+
+function getOffsetCoordinates(source, target){
+    var s2 = target;
+    var s1 = source;
+
+    var slope = (s2.y - s1.y) / (s2.x - s1.x);
+    var radius = circleRadius;
+
+    var tanx = radius / Math.sqrt(Math.pow(slope,2) + 1);
+    var arrowLength = 10;
+    var arrowWidth = 2;
+
+    if(s2.x > s1.x)
+      tanx = -tanx;
+
+    var tany = slope * tanx;
+
+    tanx += s2.x;
+    tany += s2.y;
+
+    return {x: tanx, y: tany};
 }
