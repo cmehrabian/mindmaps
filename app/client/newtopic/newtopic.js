@@ -4,10 +4,12 @@ Template.newtopic.events({
       return;
 
     var nodeBody = document.getElementById("body-submit").value;
+    var nodeTitle = document.getElementById("title-submit").value;
 
     var node = {
       user: Meteor.user(),
       username: Meteor.user().username,
+      title: nodeTitle,
       body: nodeBody,
       type: "original"
     }

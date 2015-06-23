@@ -44,6 +44,6 @@ Template.panel.events({
   },
   'click #new-node': function () {
     var target_id = Nodes.findOne({_id:Session.get("target_id")}).root_id;
-    Nodes.insert({body:"", title:"", root_id: target_id, username:Meteor.user().username});
+    Nodes.insert({body:"", title:"", root_id: target_id, type:"statement", username:Meteor.user().username});
   }
 })

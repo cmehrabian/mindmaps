@@ -1,11 +1,15 @@
 
 <template name="newtopic">
   {{#if currentUser}}
-    <fieldset>
-    <p>Post Body</p>
-    <textarea id="body-submit"></textarea>
-    <input id="submit-node" type="button" value="submit"/>
-    </fieldset>
+    <div class="page-wrap">
+      <fieldset>
+        <p>Title:</p>
+        <textarea id="title-submit" autofocus></textarea>
+        <p>Body:</p>
+        <textarea id="body-submit"></textarea>
+        <input id="submit-node" type="button" value="submit"/>
+      </fieldset>
+    </div>
   {{else}}
     Log in first!
   {{/if}}

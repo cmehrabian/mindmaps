@@ -1,0 +1,22 @@
+fieldset > p{
+  margin:0;
+}
+
+textarea#body-submit{
+  height: 75px;
+}
+
+textarea#title-submit{
+  height:35px;
+}
+
+.page-wrap{
+  max-width: 885px;
+  margin: auto ;
+}
+
+.topic-title{
+  display: inline;
+  color: #6f757d;
+  letter-spacing: -1px;
+}

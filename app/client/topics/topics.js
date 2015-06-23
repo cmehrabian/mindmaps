@@ -1,5 +1,8 @@
 
 Template.topics.helpers({
+  formatTitle: function(title){
+    return title;
+  },
   formatBody: function(body){
     if (body.length < 200)
       return body;

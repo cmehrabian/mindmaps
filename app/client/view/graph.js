@@ -66,11 +66,11 @@ Template.graph.rendered = function(){
     if(isFresh){
       DOMnodes.enter()
         .append("circle")
-          .attr("class",function(d) { return "node"})
+          .attr("class",function(d) { return "node " + d.type})
           .attr("_id", function(d) { return "node" + d._id; })
           .on("mouseover", mouseover)
           .on("dblclick", doubleclick)
-        .call(force.drag());
+          .call(force.drag());
 
         selectHighlighted();
     }
@@ -95,7 +95,8 @@ Template.graph.rendered = function(){
           .append("text")
             .text(function(d){ return d.title; })
             .attr("text-anchor", "middle")
-            .attr("font-size", "12")
+            .attr("font-size", "16")
+            .attr("font-family", "Sans-Serif")
             .classed("unselectable", true);
 
     console.log(self.texts.selectAll("*"))
@@ -262,7 +263,6 @@ Template.graph.rendered = function(){
   function doubleclick(d){
     if (d3.event.defaultPrevented)
       return;
-
     source = d;
     Session.set("state", new State("chooseTarget", {source:d} ));
   }

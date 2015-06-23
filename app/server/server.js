@@ -35,7 +35,7 @@ Meteor.methods({
     	Links.remove({$or: [{source: id}, {target: id}]});
 	},
 	newNode: function(node, edge){
-		// Note: if ever done RESTfully, add a data quality check. 
+		// Note: if ever done RESTfully, add a data quality check.
 		node.datatype = "node";
 		node.value = 0;
     node.timestamp = new Date().getTime();
@@ -179,7 +179,7 @@ var propagate = function(node_id, delta, original_id, notifications){
 
   // n.modified = true;
 
-  // Note: this is a bit more robust than it needs to be.   
+  // Note: this is a bit more robust than it needs to be.
   var outedges = Links.find({source:node._id}).fetch();
   _.forEach(outedges, function(edge){
     if(edge.type == 'disagreement')
